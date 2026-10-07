@@ -20,7 +20,7 @@ DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 FFMPEG_CANDIDATES = [
     os.environ.get("FFMPEG"),
     shutil.which("ffmpeg"),
-    STANDALONE_DIR / "ffmpeg" / "bin" / "ffmpeg.exe",   # 随项目自带的完整构建
+    STANDALONE_DIR / "ffmpeg" / "bin" / "ffmpeg.exe",   # 用户自行放入 ffmpeg/bin
     STANDALONE_DIR / "ffmpeg.exe",
     STANDALONE_DIR / "bin" / "ffmpeg.exe",
     Path(r"C:\ffmpeg\bin\ffmpeg.exe"),

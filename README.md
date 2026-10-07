@@ -16,9 +16,23 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-m3u8/mpd 下载需要本地 ffmpeg。可将 ffmpeg 完整构建（ffmpeg.exe / ffprobe.exe）
-放到项目 `ffmpeg/bin/` 下，启动时会自动探测；或在页面左下角「设置」中指定 ffmpeg 路径。
-（ffmpeg 二进制未纳入 git，请自行下载或从 Release 获取。）
+### 安装 ffmpeg（m3u8/mpd 下载必需；仅需 ffmpeg.exe，不需要 ffprobe/ffplay）
+
+**最省事**：下载我们准备好的 ffmpeg 压缩包（`.7z`，需用 [7-Zip](https://www.7-zip.org/) 解压）：
+
+http://47.117.107.6:5244/d/data/download/ffmpeg.7z?sign=QdZs0fKHbY3zTH-rhSw8eZov8jJ-gLjzd_0G2tqvt2A=:0
+
+解压后把 `bin\ffmpeg.exe` 复制到项目的 `ffmpeg\bin\` 目录即可，启动时会自动探测。
+
+也可选择其他来源 / 方式（程序按以下顺序自动探测 ffmpeg）：
+
+1. 放到项目 `ffmpeg/bin/ffmpeg.exe`（推荐，随项目目录走）；
+2. 加入系统 PATH（例如 `winget install Gyan.FFmpeg` 或用 scoop 安装）；
+3. 在页面左下角「设置」中手动指定 ffmpeg.exe 的路径。
+
+官方 Windows 构建：https://www.gyan.dev/ffmpeg/builds/ （下载 release-essentials 即可）
+
+未安装 ffmpeg 时，普通文件（mp4 等）下载不受影响，仅 m3u8/mpd 的合并会提示缺少 ffmpeg。
 
 ## 二、启动
 
