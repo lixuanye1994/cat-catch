@@ -1,0 +1,89 @@
+<!-- 标签切换 -->
+<section class="card">
+    <div class="seg-tabs">
+        <button class="seg-tab" :class="{ active: activeTab === 'active' }"
+                @click="activeTab = 'active'">
+            正在下载 <em>{{ activeJobs.length }}</em>
+        </button>
+        <button class="seg-tab" :class="{ active: activeTab === 'history' }"
+                @click="activeTab = 'history'">
+            历史记录 <em>{{ historyJobs.length }}</em>
+        </button>
+    </div>
+</section>
+
+<!-- ============ 正在下载 ============ -->
+<template v-if="activeTab === 'active'">
+    <!-- 断点续传提示 -->
+    <section v-if="unfinishedJobs.length" class="card resume-banner">
+        <span>📌 检测到 {{ unfinishedJobs.length }} 个未完成的下载，已保留缓存</span>
+        <div>
+            <button class="btn mini primary" :disabled="busy" @click="resumeAll">全部继续</button>
+            <button class="btn mini" :disabled="busy" @click="discardAllUnfinished">全部丢弃</button>
+        </div>
+    </section>
+
+    <section v-if="activeJobs.length" class="card">
+        <div v-for="dl in activeJobs" :key="dl.dl_id" class="dl-item">
+            <div class="dl-head">
+                <span class="dl-name">
+                    <span class="badge" :class="dl.kind === 'dash-merge' || dl.kind === 'dash' ? 'dash' : (dl.kind === 'hls' ? 'hls' : 'video')"></span>
+                    {{ dl.title }} <em v-if="dl.filename">→ {{ dl.filename }}</em>
+                </span>
+                <span class="dl-status" :class="dl.status">
+                    {{ downloadStatusText(dl) }}
+                </span>
+                <button v-if="dl.kind === 'hls'" class="btn mini"
+                        @click="openHlsDetail(dl)">详情</button>
+                <button v-if="dl.status === 'running'" class="btn mini"
+                        @click="cancelDownload(dl)">停止</button>
+                <template v-else>
+                    <button class="btn mini primary" @click="resume(dl)">继续</button>
+                    <button class="btn mini" @click="discard(dl)">丢弃</button>
+                </template>
+            </div>
+            <div class="progress" v-if="dl.status === 'running' || dl.status === 'interrupted' || dl.status === 'canceled'">
+                <div class="progress-bar" :class="dl.status"
+                     :style="{ width: (dl.percent > 0 ? dl.percent : 3) + '%' }"></div>
+            </div>
+        </div>
+    </section>
+
+    <section v-else class="card">
+        <div class="empty">
+            暂无进行中的下载
+        </div>
+        <div class="empty-actions">
+            <button class="btn" @click="store.view = 'sniff'">🌐 去通用嗅探</button>
+            <button class="btn" @click="store.view = 'bilibili'">📺 去 B 站解析</button>
+        </div>
+    </section>
+</template>
+
+<!-- ============ 历史记录 ============ -->
+<template v-if="activeTab === 'history'">
+    <section v-if="historyJobs.length" class="card">
+        <div class="result-head" style="margin-bottom:14px">
+            <h2 class="card-title" style="margin:0">历史下载</h2>
+            <button class="btn mini" :disabled="busy" @click="clearHistory">清空历史</button>
+        </div>
+        <div v-for="dl in historyJobs" :key="dl.dl_id" class="dl-item">
+            <div class="dl-head">
+                <span class="dl-name">
+                    <span class="badge" :class="dl.kind === 'dash-merge' || dl.kind === 'dash' ? 'dash' : (dl.kind === 'hls' ? 'hls' : 'video')"></span>
+                    {{ dl.title }} <em v-if="dl.filename">→ {{ dl.filename }}</em>
+                </span>
+                <span class="dl-time">完成于 {{ fmtTime(dl.updated) }}</span>
+                <button v-if="dl.kind === 'hls'" class="btn mini"
+                        @click="openHlsDetail(dl)">详情</button>
+                <button class="btn mini" @click="discard(dl)">清除记录</button>
+            </div>
+        </div>
+    </section>
+
+    <section v-else class="card">
+        <div class="empty">
+            暂无历史记录，完成的下载会显示在这里
+        </div>
+    </section>
+</template>

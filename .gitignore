@@ -1,0 +1,5 @@
+data/
+downloads/
+ffmpeg/
+*.pyc
+__pycache__/

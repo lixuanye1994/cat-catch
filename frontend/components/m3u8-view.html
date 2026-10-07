@@ -1,0 +1,210 @@
+<!-- 01 读取视频来源 -->
+<section class="card">
+    <div class="m3u8-head">
+        <h2 class="card-title" style="margin:0">01 · 读取视频来源</h2>
+        <button v-if="m3u8.url || m3u8.variants.length || m3u8.jobId"
+                class="btn mini" @click="newM3u8">＋ 新建下载</button>
+    </div>
+    <div class="url-row" style="margin-top:14px">
+        <input v-model="m3u8.url" class="url-input" type="text"
+               placeholder="M3U8 播放列表地址（HTTP/HTTPS，带签名参数也可以）"
+               @keyup.enter="m3u8Probe" />
+        <button class="btn primary" :disabled="m3u8.loading"
+                @click="m3u8Probe">
+            {{ m3u8.loading ? "读取中…" : "读取视频来源" }}
+        </button>
+    </div>
+    <p v-if="m3u8.error" class="error-text" style="margin-top:10px">{{ m3u8.error }}</p>
+</section>
+
+<!-- 02 选择画质 -->
+<section v-if="m3u8.variants.length" class="card">
+    <h2 class="card-title">02 · 选择画质</h2>
+
+    <!-- 概要统计：画质 / 分片 / 时长 -->
+    <div class="stat-cards">
+        <div class="stat-card">
+            <span class="stat-ico">🎚</span>
+            <div class="stat-txt">
+                <strong>{{ m3u8.variants.length }}</strong>
+                <small>可用画质</small>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-ico">🧩</span>
+            <div class="stat-txt">
+                <strong>{{ selectedVariant.segments || 0 }}</strong>
+                <small>分片数量</small>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-ico">⏱</span>
+            <div class="stat-txt">
+                <strong>{{ fmtDuration(selectedVariant.duration) }}</strong>
+                <small>总时长</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画质卡片 -->
+    <div class="variant-cards">
+        <div v-for="v in m3u8.variants" :key="v.id"
+             class="variant-card"
+             :class="{ active: m3u8.selected === v.id }"
+             @click="m3u8.selected = v.id">
+            <div class="vc-check">
+                <input type="radio" :value="v.id"
+                       v-model.number="m3u8.selected"
+                       @click.stop />
+            </div>
+            <strong class="vc-res">{{ v.resolution || "默认画质" }}</strong>
+            <div class="vc-meta">
+                <span v-if="v.bandwidth">{{ fmtSize(v.bandwidth) }}/s</span>
+                <span v-if="v.encrypted">🔒 AES-128</span>
+            </div>
+            <small v-if="v.codecs" class="vc-codec">{{ v.codecs }}</small>
+        </div>
+    </div>
+</section>
+
+<!-- 03 保存位置与参数（不依赖读取结果，进入页面即可设置；分辨率标签在读取后自动补全） -->
+<section class="card">
+    <h2 class="card-title">03 · 保存位置与下载参数</h2>
+    <label class="form-row">
+        <span>保存目录</span>
+        <input v-model="m3u8.outputDir" type="text" />
+    </label>
+
+    <div class="param-block">
+        <span>命名模板</span>
+        <div class="seg-pick tpl-pick">
+            <button :class="{ active: m3u8.tpl === 'movie' }"
+                    @click="setTpl('movie')">🎬 电影</button>
+            <button :class="{ active: m3u8.tpl === 'tv' }"
+                    @click="setTpl('tv')">📺 电视剧</button>
+            <button :class="{ active: m3u8.tpl === 'anime' }"
+                    @click="setTpl('anime')">🌸 动漫</button>
+        </div>
+    </div>
+    <div v-if="m3u8.tpl" class="tpl-fields">
+        <label class="tpl-field tpl-name">
+            <span>名称</span>
+            <input v-model="m3u8.meta.name" type="text" />
+        </label>
+        <label v-if="m3u8.tpl === 'movie'" class="tpl-field">
+            <span>年份</span>
+            <input v-model="m3u8.meta.year" type="text" placeholder="如 2023" />
+        </label>
+        <template v-if="m3u8.tpl === 'tv'">
+            <label class="tpl-field">
+                <span>季</span>
+                <input v-model.number="m3u8.meta.season" type="number" min="1" />
+            </label>
+            <label class="tpl-field">
+                <span>集</span>
+                <input v-model.number="m3u8.meta.episode" type="number" min="1" />
+            </label>
+        </template>
+        <label v-if="m3u8.tpl === 'anime'" class="tpl-field">
+            <span>集数</span>
+            <input v-model.number="m3u8.meta.episode" type="number" min="1" />
+        </label>
+    </div>
+
+    <label class="form-row">
+        <span>文件名称</span>
+        <div class="name-row">
+            <input v-model="m3u8.title" type="text"
+                   :readonly="!!m3u8.tpl" />
+            <em class="suffix-tag">.mp4</em>
+        </div>
+    </label>
+    <div class="param-block">
+        <span>同时下载数量</span>
+        <div class="seg-pick">
+            <button v-for="n in [1,2,4,6,8]" :key="n"
+                    :class="{ active: m3u8.concurrency === n }"
+                    @click="m3u8.concurrency = n">{{ n }}</button>
+        </div>
+    </div>
+    <div class="param-block">
+        <span>每个资源的重试次数</span>
+        <div class="seg-pick">
+            <button v-for="n in [0,3,5]" :key="n"
+                    :class="{ active: m3u8.retries === n }"
+                    @click="m3u8.retries = n">{{ n }}</button>
+        </div>
+    </div>
+</section>
+
+<!-- 恢复失败降级卡：签名链接过期、无法重新读取在线播放列表时管理任务 -->
+<section v-if="m3u8.restoreFailed" class="card restore-card">
+    <h2 class="card-title">任务现场</h2>
+    <p class="hint" style="margin-bottom:10px">
+        无法重新读取在线播放列表（签名链接可能已过期），仍可在下方管理该任务。
+    </p>
+    <p class="dl-name" style="margin-bottom:10px">
+        {{ m3u8Job.title || m3u8.title }}
+        <em>{{ downloadStatusText(m3u8Job) }}</em>
+    </p>
+    <div class="m3u8-actions">
+        <template v-if="m3u8Job.status === 'running'">
+            <button class="btn" @click="m3u8Pause">暂停</button>
+            <button class="btn danger" @click="m3u8CancelJob">取消</button>
+        </template>
+        <template v-else-if="m3u8Job.status === 'done'">
+            <button class="btn mini" @click="m3u8Clear">清除记录</button>
+        </template>
+        <template v-else>
+            <button class="btn primary" @click="m3u8ResumeJob">继续下载</button>
+            <button class="btn danger" @click="m3u8CancelJob">取消</button>
+        </template>
+    </div>
+</section>
+
+<!-- 04 下载进度 -->
+<section v-if="m3u8.variants.length" class="card">
+    <h2 class="card-title">04 · 下载进度</h2>
+    <div class="progress">
+        <div class="progress-bar" :class="m3u8Job.status || ''"
+             :style="{ width: (m3u8Job.percent > 0 ? m3u8Job.percent : 0) + '%' }"></div>
+    </div>
+    <div class="dl-foot">
+        <div class="dl-foot-l">
+            <strong>{{ m3u8Job.percent || 0 }}% ·
+                {{ m3u8Job.segments_done || 0 }} /
+                {{ m3u8Job.segments_total || 0 }} 个资源</strong>
+            <div class="cur-seg">
+                {{ (m3u8Job.current_segments || []).join("，") || "等待开始" }}
+            </div>
+        </div>
+        <div class="dl-foot-r">
+            {{ fmtSize(m3u8Job.bytes_downloaded || 0) }} ·
+            {{ fmtSize(m3u8Job.speed || 0) }}/s ·
+            {{ fmtDuration(m3u8Job.elapsed || 0) }}
+        </div>
+    </div>
+
+    <div class="m3u8-actions">
+        <button v-if="!m3u8Job.status" class="btn primary"
+                @click="m3u8Start">开始下载</button>
+        <template v-else-if="m3u8Job.status === 'running'">
+            <button class="btn" @click="m3u8Pause">暂停</button>
+            <button class="btn danger" @click="m3u8CancelJob">取消</button>
+        </template>
+        <template v-else-if="m3u8Job.status === 'done'">
+            <span class="hint">✅ 已完成：{{ m3u8Job.message }}</span>
+            <button class="btn mini" @click="m3u8Clear">清除记录</button>
+        </template>
+        <template v-else>
+            <button class="btn primary" @click="m3u8ResumeJob">继续下载</button>
+            <button class="btn danger" @click="m3u8CancelJob">取消</button>
+        </template>
+    </div>
+</section>
+
+<section v-if="!m3u8.variants.length && !m3u8.loading" class="card">
+    <div class="empty">
+        粘贴 M3U8 地址，或从「通用嗅探」结果中点下载进入
+    </div>
+</section>

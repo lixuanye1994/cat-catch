@@ -1,0 +1,92 @@
+<section class="card search-card">
+    <div class="url-row">
+        <input v-model="bili.url" class="url-input" type="text"
+               placeholder="粘贴 B 站视频链接，支持 b23.tv 短链 / BV 号链接"
+               @keyup.enter="biliResolve" />
+        <button class="btn primary" :disabled="bili.loading"
+                @click="biliResolve">
+            {{ bili.loading ? "解析中…" : "获取视频" }}
+        </button>
+    </div>
+    <div class="options-row">
+        <span class="hint">高清 / 1080P+ 需在「设置」中填写 B 站 SESSDATA</span>
+    </div>
+</section>
+
+<!-- 视频信息 -->
+<section v-if="bili.video" class="card bili-meta">
+    <img v-if="bili.video.cover" :src="bili.video.cover"
+         class="cover" referrerpolicy="no-referrer" />
+    <div class="bili-info">
+        <h2>{{ bili.video.title }}</h2>
+        <p>UP主：{{ bili.video.owner }} · 时长：{{ fmtDuration(bili.video.duration) }}</p>
+        <p>BV号：{{ bili.video.bvid }}</p>
+        <p class="bili-desc-line">简介：{{ bili.video.desc || "暂无简介" }}</p>
+        <div class="bili-actions">
+            <select v-if="bili.video.pages.length > 1"
+                    v-model.number="bili.page"
+                    @change="biliGetQualities">
+                <option v-for="p in bili.video.pages" :key="p.cid"
+                        :value="p.page">
+                    P{{ p.page }} {{ p.part }}
+                </option>
+            </select>
+            <span v-if="bili.loadingQualities" class="hint">正在获取下载地址…</span>
+        </div>
+    </div>
+</section>
+
+<!-- 视频预览 -->
+<section v-if="bili.qualities.length" class="card">
+    <h2 class="card-title">视频预览</h2>
+    <video class="bili-preview" controls preload="metadata"
+           :src="biliPreviewUrl"></video>
+</section>
+
+<!-- 清晰度（仿 PeanutDL：MP4 标题 + 每行画质徽章与独立下载按钮） -->
+<section v-if="bili.qualities.length" class="card">
+    <h3 class="bili-format-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+            <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+            <path d="M15.033 13.44a.647.647.647 0 0 1 0 1.12l-4.065 2.352a.645.645 0 0 1-.968-.56v-4.704a.645.645 0 0 1 .967-.56z"/>
+        </svg>
+        MP4
+    </h3>
+    <div class="bili-q-list">
+        <div v-for="(q, i) in bili.qualities" :key="q.quality_id"
+             class="bili-q-row">
+            <div class="bili-q-info">
+                <p>{{ q.label }}</p>
+                <div class="bili-q-badges">
+                    <span class="q-badge">{{ fmtDuration(bili.video.duration) }}</span>
+                    <span v-if="q.width" class="q-badge">{{ q.width }}×{{ q.height }}</span>
+                    <span v-if="biliEstSize(q)" class="q-badge">
+                        ≈ {{ fmtSize(biliEstSize(q)) }}
+                    </span>
+                </div>
+            </div>
+            <div class="bili-q-btn">
+                <button class="btn primary" :disabled="bili.loadingQualities"
+                        @click="biliDownloadAt(i)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    下载
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section v-if="!bili.video" class="card">
+    <div class="empty">
+        粘贴 B 站站链接后点击「获取视频」，无需打开浏览器页面
+    </div>
+</section>

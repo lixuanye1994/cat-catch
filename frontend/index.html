@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cat-sniffer 视频嗅探器</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>" />
+</head>
+<body>
+    <div id="app">
+        <div class="layout">
+            <!-- 左侧菜单 -->
+            <aside class="sidebar">
+                <div class="side-brand">
+                    <span class="logo">🐱</span>
+                    <div>
+                        <strong>cat-sniffer</strong>
+                        <small>本地视频嗅探器</small>
+                    </div>
+                </div>
+                <nav class="side-nav">
+                    <a class="nav-item" :class="{ active: store.view === 'sniff' }"
+                       @click="store.view = 'sniff'">
+                        <span>🌐</span><span class="nav-label">通用嗅探</span>
+                    </a>
+                    <a class="nav-item" :class="{ active: store.view === 'm3u8' }"
+                       @click="store.view = 'm3u8'">
+                        <span>🎞</span><span class="nav-label">M3U8 下载</span>
+                    </a>
+                    <a class="nav-item" :class="{ active: store.view === 'bilibili' }"
+                       @click="store.view = 'bilibili'">
+                        <span>📺</span><span class="nav-label">B站解析</span>
+                    </a>
+
+                    <div class="nav-divider"></div>
+
+                    <a class="nav-item" :class="{ active: store.view === 'downloads' }"
+                       @click="store.view = 'downloads'">
+                        <span>⬇</span><span class="nav-label">下载任务</span>
+                        <span v-if="runningCount" class="nav-badge">{{ runningCount }}</span>
+                    </a>
+                </nav>
+                <div class="side-foot">
+                    <span class="conn" :class="{ on: store.connected }" title="通用嗅探连接">
+                        嗅探 ●
+                    </span>
+                    <span class="conn" :class="{ on: store.globalConnected }" title="下载通道连接">
+                        下载 ●
+                    </span>
+                    <button class="btn ghost block" @click="openSettings">⚙ 设置</button>
+                </div>
+            </aside>
+
+            <!-- 右侧内容：KeepAlive 缓存各视图，切走后嗅探/状态不中断 -->
+            <main class="content">
+                <keep-alive>
+                    <component :is="store.view + '-view'"></component>
+                </keep-alive>
+            </main>
+        </div>
+
+        <settings-modal ref="settingsModal"></settings-modal>
+
+        <!-- toast 轻通知 -->
+        <transition-group name="toast" tag="div" class="toast-stack">
+            <div v-for="t in store.toasts" :key="t.id"
+                 class="toast" :class="t.type" @click="dismissToast(t.id)">
+                <span class="toast-ico">
+                    {{ t.type === 'error' ? '⚠️' : (t.type === 'info' ? 'ℹ️' : '✅') }}
+                </span>
+                <span class="toast-msg">{{ t.message }}</span>
+            </div>
+        </transition-group>
+    </div>
+
+    <script src="/vendor/vue.global.prod.js"></script>
+    <script src="/shared.js"></script>
+    <script src="/components/settings-modal.js"></script>
+    <script src="/components/sniff-view.js"></script>
+    <script src="/components/bili-view.js"></script>
+    <script src="/components/downloads-view.js"></script>
+    <script src="/components/m3u8-view.js"></script>
+    <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<section class="card search-card">
+    <div class="url-row">
+        <input v-model="url" class="url-input" type="text"
+               placeholder="输入视频网页网址，例如 https://www.example.com/video/123"
+               @keyup.enter="startSniff" />
+        <button v-if="!taskRunning" class="btn primary" @click="startSniff">开始嗅探</button>
+        <button v-else class="btn danger" @click="stopSniff">停止</button>
+    </div>
+    <div class="options-row">
+        <span v-if="task" class="task-meta">
+            {{ statusText }}
+            <template v-if="task.page_title"> · {{ task.page_title }}</template>
+        </span>
+    </div>
+</section>
+
+<section class="card">
+    <div class="result-head">
+        <h2 class="card-title">嗅探结果 <em>{{ filteredItems.length }}</em></h2>
+        <div class="filters">
+            <button v-for="f in filters" :key="f.key"
+                    class="chip" :class="{ active: filter === f.key }"
+                    @click="filter = f.key">
+                {{ f.label }} {{ countOf(f.key) }}
+            </button>
+        </div>
+    </div>
+
+    <div v-if="!filteredItems.length" class="empty">
+        {{ taskRunning ? "正在嗅探，请在打开的页面中播放视频…" : "暂无数据，输入网址开始嗅探" }}
+    </div>
+
+    <div v-else class="table">
+        <div class="tr head">
+            <span class="td-kind">类型</span>
+            <span class="td-size">大小</span>
+            <span class="td-host">来源</span>
+            <span class="td-url">地址</span>
+            <span class="td-actions">操作</span>
+        </div>
+        <div v-for="item in filteredItems" :key="item.id" class="tr">
+            <span class="td-kind">
+                <span class="badge" :class="item.kind">{{ kindLabel(item.kind) }}</span>
+                <small v-if="item.ext">.{{ item.ext }}</small>
+            </span>
+            <span class="td-size">{{ fmtSize(item.size) }}</span>
+            <span class="td-host" :title="item.page_url">{{ item.host }}</span>
+            <span class="td-url" :title="item.url">
+                <span v-if="item.kind === 'key'">🔑 {{ shortKey(item.key) }}</span>
+                <span v-else>{{ item.url }}</span>
+            </span>
+            <span class="td-actions">
+                <button class="btn mini" @click="copyText(item.kind === 'key' ? item.key : item.url)">复制</button>
+                <button v-if="item.kind !== 'key'" class="btn mini primary"
+                        @click="downloadItem(item)">下载</button>
+            </span>
+        </div>
+    </div>
+</section>
