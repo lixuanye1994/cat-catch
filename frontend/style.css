@@ -82,6 +82,14 @@ body {
     font-size: 14px; transition: .15s;
     user-select: none;
 }
+/* 图标统一框框：无论 emoji 字形宽窄，都在固定方框内居中 */
+.nav-item > span:first-child {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px; line-height: 1;
+}
+.nav-label { flex: 1; }
 .nav-divider { height: 1px; background: var(--border); margin: 10px 12px; }
 .nav-badge {
     margin-left: auto;
