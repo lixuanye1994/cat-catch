@@ -261,7 +261,7 @@ async def bili_resolve(body: BiliResolveIn):
     try:
         return await bilibili.resolve_url(body.url.strip(),
                                           settings.get("bilibili_sessdata", ""))
-    except bilibili.BilibiliError as e:
+    except (bilibili.BilibiliError, httpx.HTTPError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -271,7 +271,7 @@ async def bili_playurl(body: BiliPlayurlIn):
     try:
         return {"qualities": await bilibili.get_playurl(
             body.bvid, body.cid, settings.get("bilibili_sessdata", ""))}
-    except bilibili.BilibiliError as e:
+    except (bilibili.BilibiliError, httpx.HTTPError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

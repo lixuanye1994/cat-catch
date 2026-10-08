@@ -3,6 +3,7 @@
 流程：b23.tv 短链/普通链接 → bvid → view 接口取分P → wbi 签名 playurl 取 DASH 直链。
 参考 B 站开放接口与社区 wbi 签名实现。接口可能随站点调整而失效。
 """
+import asyncio
 import re
 
 import httpx
@@ -31,6 +32,30 @@ QUALITY_LABELS = {
 
 class BilibiliError(Exception):
     pass
+
+
+# 匿名访客 buvid3：全进程只获取一次并复用，避免每次 playurl 都冷请求触发风控
+_buvid3_cache = ""
+_buvid3_lock = asyncio.Lock()
+
+
+async def _ensure_buvid3(client: httpx.AsyncClient) -> None:
+    global _buvid3_cache
+    if _buvid3_cache:
+        client.cookies.set("buvid3", _buvid3_cache, domain=".bilibili.com")
+        return
+    async with _buvid3_lock:
+        if _buvid3_cache:
+            client.cookies.set("buvid3", _buvid3_cache, domain=".bilibili.com")
+            return
+        try:
+            spi = await client.get(f"{_API}/x/frontend/finger/spi")
+            b3 = spi.json().get("data", {}).get("b_3", "")
+            if b3:
+                _buvid3_cache = b3
+                client.cookies.set("buvid3", b3, domain=".bilibili.com")
+        except Exception:
+            pass
 
 
 def _client(sessdata: str = "") -> httpx.AsyncClient:
@@ -97,13 +122,7 @@ async def get_playurl(bvid: str, cid: int, sessdata: str = "") -> list[dict]:
     async with _client(sessdata) as client:
         # 匿名访问需要 buvid3 访客标识，否则 playurl 返回"账号未登录"
         if not sessdata:
-            try:
-                spi = await client.get(f"{_API}/x/frontend/finger/spi")
-                buvid3 = spi.json().get("data", {}).get("b_3", "")
-                if buvid3:
-                    client.cookies.set("buvid3", buvid3, domain=".bilibili.com")
-            except Exception:
-                pass
+            await _ensure_buvid3(client)
 
         # 非 wbi 端点：匿名可得 480P/360P，携带 SESSDATA 自动解锁更高画质
         params = {
@@ -111,7 +130,7 @@ async def get_playurl(bvid: str, cid: int, sessdata: str = "") -> list[dict]:
             "fnval": 4048, "fnver": 0, "fourk": 1,
             "qn": 112,
         }
-        result = await _json(client, "/x/player/playurl", params)
+        result = await _json(client, "/x/player/playurl", params, retries=3)
 
     data = result.get("data", {})
     dash = data.get("dash")
@@ -159,13 +178,37 @@ async def get_playurl(bvid: str, cid: int, sessdata: str = "") -> list[dict]:
 
 
 # ---------- HTTP 工具 ----------
-async def _json(client: httpx.AsyncClient, path: str, params: dict) -> dict:
+async def _json(client: httpx.AsyncClient, path: str, params: dict,
+                retries: int = 1) -> dict:
+    """GET 并解析 JSON。
+
+    空响应/非 JSON（风控限流）或网络抖动时按指数退避重试；
+    业务错误码（code != 0）立即抛出，不重试。
+    """
     params = {k: v for k, v in params.items() if v not in ("", None)}
-    resp = await client.get(_API + path, params=params)
-    payload = resp.json()
-    if payload.get("code") != 0:
-        raise BilibiliError(payload.get("message") or f"接口错误 {payload.get('code')}")
-    return payload
+    url = _API + path
+    last_exc: Exception | None = None
+    for attempt in range(retries):
+        try:
+            resp = await client.get(url, params=params)
+            try:
+                payload = resp.json()
+            except Exception:
+                # 空 body / HTML 验证页：限流，退避后重试
+                raise BilibiliError("__retry__")
+            if payload.get("code") != 0:
+                raise BilibiliError(
+                    payload.get("message") or f"接口错误 {payload.get('code')}")
+            return payload
+        except BilibiliError as e:
+            if str(e) != "__retry__":
+                raise
+            last_exc = e
+        except httpx.HTTPError as e:
+            last_exc = e
+        if attempt < retries - 1:
+            await asyncio.sleep(0.6 * (attempt + 1))
+    raise BilibiliError("B 站接口繁忙或被限流，请稍后重试")
 
 
 def download_headers(sessdata: str = "") -> dict:
