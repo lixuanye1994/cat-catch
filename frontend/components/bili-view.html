@@ -69,7 +69,9 @@
                 </div>
             </div>
             <div class="bili-q-btn">
-                <button class="btn primary" :disabled="bili.loadingQualities"
+                <!-- 无任务：下载 -->
+                <button v-if="!jobAt(i).dl_id" class="btn primary"
+                        :disabled="bili.loadingQualities"
                         @click="biliDownloadAt(i)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                          viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -80,8 +82,102 @@
                     </svg>
                     下载
                 </button>
+                <!-- 进行中：暂停 / 取消 -->
+                <template v-else-if="jobAt(i).status === 'running'">
+                    <button class="btn" @click="biliPause(i)">暂停</button>
+                    <button class="btn danger" @click="biliDiscard(i)">取消</button>
+                </template>
+                <!-- 已完成 -->
+                <span v-else-if="jobAt(i).status === 'done'" class="hint">✅ 已完成</span>
+                <!-- 暂停/出错：继续 / 取消 -->
+                <template v-else>
+                    <button class="btn primary" @click="biliResume(i)">继续下载</button>
+                    <button class="btn danger" @click="biliDiscard(i)">取消</button>
+                </template>
+            </div>
+
+            <!-- 下载进度（有任务时展开，换行占满整行） -->
+            <div v-if="jobAt(i).dl_id" class="bili-progress">
+                <div class="progress">
+                    <div class="progress-bar" :class="jobAt(i).status"
+                         :style="{ width: (jobAt(i).percent > 0 ? jobAt(i).percent : 0) + '%' }"></div>
+                </div>
+                <div class="dl-foot">
+                    <div class="dl-foot-l">
+                        <strong>{{ downloadStatusText(jobAt(i)) }}</strong>
+                        <div v-if="jobAt(i).status === 'error'" class="cur-seg">
+                            {{ jobAt(i).message }}
+                        </div>
+                    </div>
+                    <div class="dl-foot-r">
+                        {{ fmtSize(jobAt(i).bytes_downloaded || 0) }} ·
+                        {{ fmtSize(jobAt(i).speed || 0) }}/s ·
+                        {{ fmtDuration(jobAt(i).elapsed || 0) }}
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+</section>
+
+<!-- 全部分P批量下载 -->
+<section v-if="bili.video && bili.video.pages.length > 1" class="card batch-card">
+    <div class="batch-head">
+        <div class="batch-head-txt">
+            <h2 class="card-title" style="margin:0">批量下载全部分P</h2>
+            <small>共 {{ bili.video.pages.length }} 个分P · 串行下载，避免触发限流</small>
+        </div>
+        <span class="batch-q-badge">{{ batchQualityLabel }}</span>
+    </div>
+
+    <!-- 控制行：画质 + 主按钮 -->
+    <div class="batch-bar">
+        <div class="batch-q-select">
+            <span>画质</span>
+            <select v-model.number="bili.batch.qIndex" :disabled="bili.batch.running">
+                <option v-for="(q, i) in bili.qualities" :key="q.quality_id" :value="i">
+                    {{ q.label }}
+                </option>
+            </select>
+        </div>
+        <button v-if="!bili.batch.running" class="btn primary batch-go"
+                :disabled="!bili.qualities.length" @click="startBatch">
+            ⬇ 下载全部分P
+        </button>
+        <button v-else class="btn danger" @click="stopBatch">■ 停止</button>
+    </div>
+
+    <!-- 进度面板 -->
+    <div v-if="bili.batch.running || bili.batch.doneCount > 0" class="batch-panel">
+        <div class="bp-ring">
+            <strong>{{ batchPercent }}%</strong>
+            <small>{{ bili.batch.doneCount }}/{{ bili.batch.total }}</small>
+        </div>
+        <div class="bp-body">
+            <div class="bp-title-row">
+                <strong>正在下载 P{{ bili.batch.curPage }}</strong>
+                <span>{{ downloadStatusText(batchJob) }}</span>
+            </div>
+            <div class="progress bp-track">
+                <div class="progress-bar" :class="batchJob.status"
+                     :style="{ width: batchPercent + '%' }"></div>
+            </div>
+            <div class="bp-meta">
+                <span>↓ {{ fmtSize(batchJob.bytes_downloaded || 0) }}</span>
+                <span>{{ fmtSize(batchJob.speed || 0) }}/s</span>
+                <span>⏱ {{ fmtDuration(batchJob.elapsed || 0) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分P状态网格 -->
+    <div class="bp-grid">
+        <span v-for="p in bili.video.pages" :key="p.cid" class="bp-cell"
+              :class="p.page < bili.batch.curPage || p.page <= bili.batch.doneCount ? 'done'
+                     : p.page === bili.batch.curPage && bili.batch.running ? 'cur' : ''"
+              :title="'P' + p.page + ' ' + p.part">
+            {{ p.page }}
+        </span>
     </div>
 </section>
 

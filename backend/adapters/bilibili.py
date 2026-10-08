@@ -4,6 +4,7 @@
 参考 B 站开放接口与社区 wbi 签名实现。接口可能随站点调整而失效。
 """
 import asyncio
+import random
 import re
 
 import httpx
@@ -182,12 +183,11 @@ async def _json(client: httpx.AsyncClient, path: str, params: dict,
                 retries: int = 1) -> dict:
     """GET 并解析 JSON。
 
-    空响应/非 JSON（风控限流）或网络抖动时按指数退避重试；
+    空响应/非 JSON（风控限流）或网络抖动时按「指数退避 + 随机抖动」重试；
     业务错误码（code != 0）立即抛出，不重试。
     """
     params = {k: v for k, v in params.items() if v not in ("", None)}
     url = _API + path
-    last_exc: Exception | None = None
     for attempt in range(retries):
         try:
             resp = await client.get(url, params=params)
@@ -203,11 +203,12 @@ async def _json(client: httpx.AsyncClient, path: str, params: dict,
         except BilibiliError as e:
             if str(e) != "__retry__":
                 raise
-            last_exc = e
-        except httpx.HTTPError as e:
-            last_exc = e
+        except httpx.HTTPError:
+            pass
         if attempt < retries - 1:
-            await asyncio.sleep(0.6 * (attempt + 1))
+            # 指数退避 0.8/1.6/3.2… + 0~0.5s 随机抖动，错峰避免批量请求同时重试
+            delay = 0.8 * (2 ** attempt) + random.uniform(0, 0.5)
+            await asyncio.sleep(delay)
     raise BilibiliError("B 站接口繁忙或被限流，请稍后重试")
 
 

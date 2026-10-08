@@ -120,7 +120,7 @@ body {
 .hint { color: var(--muted); font-size: 12px; }
 .bili-meta { display: flex; gap: 20px; }
 .cover {
-    width: 240px; height: 150px; object-fit: cover;
+    height: 200px; object-fit: cover;
     border-radius: 8px; flex-shrink: 0; background: var(--card-2);
 }
 .bili-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -136,7 +136,7 @@ body {
 /* B 站简介：与 BV号 行同样的 <p>，超出 2 行省略 */
 .bili-info p.bili-desc-line {
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: 12px;
@@ -158,7 +158,7 @@ body {
 .bili-format-title svg { color: var(--primary); flex-shrink: 0; }
 .bili-q-list { display: flex; flex-direction: column; gap: 8px; }
 .bili-q-row {
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 12px 14px;
@@ -180,6 +180,76 @@ body {
     display: inline-flex; align-items: center; gap: 6px;
 }
 .bili-q-btn .btn svg { flex-shrink: 0; }
+
+/* ===== 全部分P批量下载 ===== */
+.batch-card .batch-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px; margin-bottom: 14px;
+}
+.batch-head-txt { display: flex; flex-direction: column; gap: 3px; }
+.batch-head-txt small { color: var(--muted); font-size: 12px; }
+.batch-q-badge {
+    flex-shrink: 0; padding: 4px 12px; border-radius: 999px;
+    background: var(--chip-active-bg); color: var(--primary);
+    font-size: 12px; font-weight: 600;
+}
+
+.batch-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.batch-q-select { display: flex; align-items: center; gap: 8px; }
+.batch-q-select > span { color: var(--muted); font-size: 13px; }
+.batch-q-select select {
+    background: var(--card-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; outline: none;
+}
+.batch-go { padding-left: 20px; padding-right: 20px; }
+
+/* 进度面板：左侧百分比块 + 右侧进度信息 */
+.batch-panel {
+    display: flex; gap: 16px; align-items: center;
+    margin-top: 16px; padding: 14px;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 12px;
+}
+.bp-ring {
+    flex-shrink: 0; width: 64px; height: 64px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--stat-ico-bg); line-height: 1.1;
+}
+.bp-ring strong { font-size: 19px; color: var(--primary); }
+.bp-ring small { font-size: 11px; color: var(--muted); }
+.bp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.bp-title-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.bp-title-row span { color: var(--muted); font-size: 12px; }
+.bp-track { height: 8px; border-radius: 999px; }
+.bp-meta { display: flex; gap: 14px; color: var(--muted); font-size: 12px; }
+
+/* 分P状态网格 */
+.bp-grid {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px;
+}
+.bp-cell {
+    width: 30px; height: 28px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--card-2); border: 1px solid var(--border);
+    color: var(--muted); font-size: 12px; cursor: default;
+    transition: .15s;
+}
+.bp-cell.cur {
+    color: #fff; border-color: var(--primary);
+    background: var(--primary);
+    box-shadow: 0 0 0 3px var(--chip-active-bg);
+}
+.bp-cell.done {
+    color: var(--ok); border-color: transparent;
+    background: rgba(74, 222, 128, .14);
+}
+
+/* 画质行内的下载进度 */
+.bili-progress {
+    flex-basis: 100%;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--border);
+}
 
 @media (max-width: 640px) {
     .bili-q-row { flex-direction: column; align-items: stretch; }

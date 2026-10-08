@@ -218,6 +218,15 @@ class DownloadJob:
         dones[idx] = done
         if total:
             totals[idx] = total
+        # 字节总量与瞬时速度（基于相邻回调的增量）
+        now = time.time()
+        bytes_sum = int(sum(dones))
+        last = getattr(self, "_dash_last", None)
+        if last is not None and now > last[0]:
+            speed = (bytes_sum - last[1]) / (now - last[0])
+            self.state["speed"] = max(0, round(speed))
+        self._dash_last = (now, bytes_sum)
+        self.state["bytes_downloaded"] = bytes_sum
         grand_t = sum(totals)
         if grand_t:
             self._progress(sum(dones) / grand_t * 100)
