@@ -1,5 +1,7 @@
 """Playwright 嗅探任务：等价替代扩展的注入 + webRequest"""
 import asyncio
+import logging
+import traceback
 import uuid
 from urllib.parse import urlparse
 
@@ -7,6 +9,8 @@ from playwright.async_api import async_playwright
 
 from . import config
 from .matcher import MediaMatcher
+
+logger = logging.getLogger("cat-sniffer")
 
 
 def _header(headers: dict, name: str) -> str:
@@ -70,6 +74,7 @@ class SniffTask:
         except Exception as e:
             self.status = "error"
             self.error = str(e)
+            logger.error("嗅探启动失败：%s\n%s", e, traceback.format_exc())
             self.broadcast({"type": "status", "status": self.status, "error": str(e)})
             await self._teardown()
 
@@ -97,11 +102,19 @@ class SniffTask:
     async def _launch(self):
         self._pw = await async_playwright().start()
         profile_dir = config.PROFILES_DIR / "desktop"
-        self._context = await self._pw.chromium.launch_persistent_context(
+        launch_args = dict(
             user_data_dir=str(profile_dir),
             headless=False,
             args=["--disable-blink-features=AutomationControlled"],
         )
+        # 优先用系统 Chrome（无需 playwright install），不存在再回退内置 Chromium
+        try:
+            self._context = await self._pw.chromium.launch_persistent_context(
+                channel="chrome", **launch_args)
+        except Exception as e:
+            logger.warning("系统 Chrome 启动失败（%s），回退内置 Chromium", e)
+            self._context = await self._pw.chromium.launch_persistent_context(
+                **launch_args)
         self._page = self._context.pages[0] if self._context.pages else await self._context.new_page()
 
         # 1) CDP 网络监听（等价 chrome.webRequest）

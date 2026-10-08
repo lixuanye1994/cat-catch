@@ -12,7 +12,16 @@ class DownloadManager:
     def __init__(self):
         self.jobs: dict[str, DownloadJob] = {}
         self._bg: set[asyncio.Task] = set()
-        self._seq = itertools.count(1)
+        # 从 journal 已有最大 id 之后编号，避免重启后复用旧任务的缓存目录
+        max_id = 0
+        for dl_id in journal.load():
+            if dl_id.isdigit():
+                max_id = max(max_id, int(dl_id))
+        if journal.TMP_DIR.exists():
+            for child in journal.TMP_DIR.iterdir():
+                if child.name.isdigit():
+                    max_id = max(max_id, int(child.name))
+        self._seq = itertools.count(max_id + 1)
         self.subscribers: set[asyncio.Queue] = set()
 
     # ---------- 事件推送 ----------
@@ -134,7 +143,7 @@ class DownloadManager:
         if not job:
             return
         self._persist(job)
-        self.broadcast({"type": "download", **job.state})
+        self.broadcast({"type": "download", "title": job.title, **job.state})
 
 
 manager = DownloadManager()

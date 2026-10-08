@@ -48,7 +48,11 @@
                     <span class="conn" :class="{ on: store.globalConnected }" title="下载通道连接">
                         下载 ●
                     </span>
-                    <button class="btn ghost block" @click="openSettings">⚙ 设置</button>
+                    <div class="side-foot-btns">
+                        <button class="btn ghost" :title="store.theme === 'light' ? '切换到深色主题' : '切换到浅色主题'"
+                                @click="toggleTheme">{{ store.theme === 'light' ? '🌙' : '☀️' }}</button>
+                        <button class="btn ghost block" @click="openSettings">⚙ 设置</button>
+                    </div>
                 </div>
             </aside>
 

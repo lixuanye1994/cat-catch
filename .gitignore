@@ -3,3 +3,4 @@ downloads/
 ffmpeg/
 *.pyc
 __pycache__/
+*.7z

@@ -1,8 +1,25 @@
 /* 免构建共享层：全局响应式 store + 工具函数（Vue 3 global build） */
 
 /* 跨组件共享的唯一状态源；各视图私有的临时状态放在组件内部 */
+// 主题：优先 localStorage，其次跟随系统，默认深色
+(function initTheme() {
+    let theme;
+    try {
+        theme = localStorage.getItem("cat-theme");
+    } catch {}
+    if (!theme) {
+        theme = (matchMedia("(prefers-color-scheme: light)").matches)
+            ? "light" : "dark";
+    }
+    document.documentElement.dataset.theme = theme;
+    window.__theme = theme;
+})();
+
 window.store = Vue.reactive({
     view: "sniff",
+
+    // 主题 dark / light
+    theme: window.__theme,
 
     // 通用嗅探 WS 连接状态（侧边栏指示灯）
     connected: false,
@@ -130,8 +147,7 @@ window.H = {
              + `${p(d.getHours())}:${p(d.getMinutes())}`;
     },
 
-    /* 注意：WS 的 download 消息与下载 POST 返回的 state 都不含 title，
-     * 调用方需把已知 title 补进条目后再合并（标题规则与后端 base_title 耦合） */
+    // WS 的 download 消息已带 title；下载 POST 返回的 state 不含 title，调用方自行补标题
     mergeDownloads(items, target = store.globalDownloads) {
         items.forEach(d => {
             target[d.dl_id] = { ...target[d.dl_id], ...d };

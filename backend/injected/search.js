@@ -857,8 +857,10 @@
                             // 清理URL
                             url = url.replace(/['"]/g, '').trim();
                             if (url && !url.startsWith('http')) {
-                                // 补全协议
-                                url = window.location.protocol + '//' + url.replace(/^\/\//, '');
+                                // 相对路径（根路径 /path、协议相对 //host、相对路径）统一按当前页解析
+                                try {
+                                    url = new URL(url, location.href).href;
+                                } catch (e) { continue; }
                             }
                             if (url && isUrl(url)) {
                                 postData({ action: "catCatchAddMedia", url: url, href: location.href, ext: "m3u8" });

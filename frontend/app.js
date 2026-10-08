@@ -24,6 +24,13 @@
                 store.settingsOpen = true;
                 this.$refs.settingsModal.loadSettings();
             },
+            toggleTheme() {
+                store.theme = store.theme === "light" ? "dark" : "light";
+                document.documentElement.dataset.theme = store.theme;
+                try {
+                    localStorage.setItem("cat-theme", store.theme);
+                } catch {}
+            },
             dismissToast(id) {
                 H.dismissToast(id);
             },
