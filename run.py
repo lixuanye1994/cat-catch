@@ -8,6 +8,8 @@
 """
 import socket
 import sys
+import threading
+import webbrowser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -48,6 +50,8 @@ def main():
     else:
         print(f"  请在浏览器打开: {url}")
     print("=" * 56)
+    # 延迟 1.5 秒用系统默认浏览器（外部浏览器）打开，等服务先就绪
+    threading.Timer(1.5, lambda: webbrowser.open(url)).start()
     uvicorn.run("backend.main:app",
                 host=settings["host"], port=settings["port"], log_level="warning")
 
