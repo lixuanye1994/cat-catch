@@ -413,6 +413,35 @@ body {
     background: var(--seg-active-bg);
 }
 
+/* 命名模板：卡片式类型选择 */
+.tpl-block { align-items: flex-start; }
+.tpl-cards { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+.tpl-card {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 18px 9px 12px;
+    cursor: pointer; color: var(--text);
+    transition: border-color .15s, background .15s, transform .15s, box-shadow .15s;
+}
+.tpl-card:hover { transform: translateY(-2px); border-color: var(--tpl-color, var(--primary)); }
+.tpl-card .tc-ico {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 9px; font-size: 18px;
+    background: var(--tpl-soft, var(--stat-ico-bg));
+}
+.tpl-card .tc-txt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.tpl-card .tc-txt strong { font-size: 14px; font-weight: 600; }
+.tpl-card .tc-txt small { font-size: 10px; color: var(--muted); letter-spacing: .3px; }
+.tpl-card.active {
+    border-color: var(--tpl-color, var(--primary));
+    background: var(--tpl-soft, var(--variant-active-bg));
+    box-shadow: 0 0 0 1px var(--tpl-color, var(--primary));
+}
+.tpl-card.active .tc-txt small { color: var(--tpl-color, var(--primary)); }
+.tpl-movie { --tpl-color: #f59e0b; --tpl-soft: rgba(245, 158, 11, .14); }
+.tpl-tv    { --tpl-color: #38bdf8; --tpl-soft: rgba(56, 189, 248, .14); }
+.tpl-anime { --tpl-color: #f472b6; --tpl-soft: rgba(244, 114, 182, .15); }
+
 /* 命名模板：结构化字段 */
 .tpl-fields { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .tpl-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; }

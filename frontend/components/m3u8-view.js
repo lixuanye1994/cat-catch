@@ -27,6 +27,7 @@ Components.M3u8View = {
                 restoreFailed: false,
                 tpl: "",        // 命名模板："" 自由 | "movie" | "tv" | "anime"
                 meta: { name: "", year: "", season: 1, episode: 1 },
+                dirAuto: true,  // 保存目录是否跟随模板自动生成（用户手动改过后置 false）
             },
         };
     },
@@ -55,7 +56,8 @@ Components.M3u8View = {
             }
         },
         // 模板字段 / 模板类型 / 所选画质变化时，重新拼装文件名
-        "m3u8.tpl"() { this.syncTitle(); },
+        "m3u8.tpl"() { this.syncTitle(); this.syncOutputDir(); },
+        "m3u8.meta.name"() { this.syncOutputDir(); },
         "m3u8.meta": { handler() { this.syncTitle(); }, deep: true },
         selectedVariant() { this.syncTitle(); },
     },
@@ -73,8 +75,38 @@ Components.M3u8View = {
     },
     methods: {
         fillDefaultDir() {
+            this.m3u8.dirAuto = true;
             if (this.store.appSettings) {
                 this.m3u8.outputDir = this.store.appSettings.output_dir || "";
+            }
+        },
+
+        // 下载根目录（全局设置），去掉结尾斜杠
+        baseOutputDir() {
+            const base = (this.store.appSettings && this.store.appSettings.output_dir) || "";
+            return base.replace(/[\\/]+$/, "");
+        },
+
+        // 用户手动编辑保存目录后，不再跟随模板自动变化
+        onDirInput() {
+            this.m3u8.dirAuto = false;
+        },
+
+        // 按模板生成保存目录：电影 → 根/电影；电视剧 → 根/电视剧/剧名；动漫 → 根/动漫
+        syncOutputDir() {
+            if (!this.m3u8.dirAuto) return;
+            const base = this.baseOutputDir();
+            if (!base || !this.m3u8.tpl) return;
+            const j = base.includes("/") && !base.includes("\\") ? "/" : "\\";
+            if (this.m3u8.tpl === "movie") {
+                this.m3u8.outputDir = `${base}${j}电影`;
+            } else if (this.m3u8.tpl === "anime") {
+                this.m3u8.outputDir = `${base}${j}动漫`;
+            } else if (this.m3u8.tpl === "tv") {
+                const name = (this.m3u8.meta.name || "").trim();
+                this.m3u8.outputDir = name
+                    ? `${base}${j}电视剧${j}${name}`
+                    : `${base}${j}电视剧`;
             }
         },
 
@@ -106,6 +138,8 @@ Components.M3u8View = {
             // 优先用记录内的保存目录，而非当前全局设置
             this.m3u8.outputDir = opts.output_dir
                 || (this.store.appSettings && this.store.appSettings.output_dir) || "";
+            // 恢复历史任务时沿用当时目录，不自动改写
+            this.m3u8.dirAuto = false;
             this.m3u8.concurrency = opts.concurrency || 4;
             this.m3u8.retries = opts.retries ?? 3;
             // 带上原下载记录的请求头重新解析，并选中当时的变体
@@ -137,6 +171,7 @@ Components.M3u8View = {
             this.m3u8.restoreFailed = false;
             this.m3u8.tpl = "";
             this.m3u8.meta = { name: "", year: "", season: 1, episode: 1 };
+            this.m3u8.dirAuto = true;
         },
 
         /* ---------- 探测 / 下载 ---------- */
@@ -309,6 +344,8 @@ Components.M3u8View = {
         setTpl(type) {
             if (this.m3u8.tpl === type) {
                 this.m3u8.tpl = "";
+                // 取消模板时回到下载根目录（仅自动模式下）
+                if (this.m3u8.dirAuto) this.m3u8.outputDir = this.baseOutputDir();
                 return;
             }
             if (!this.m3u8.meta.name.trim()) {

@@ -72,18 +72,39 @@
     <h2 class="card-title">03 · 保存位置与下载参数</h2>
     <label class="form-row">
         <span>保存目录</span>
-        <input v-model="m3u8.outputDir" type="text" />
+        <input v-model="m3u8.outputDir" type="text" @input="onDirInput" />
     </label>
 
-    <div class="param-block">
+    <div class="param-block tpl-block">
         <span>命名模板</span>
-        <div class="seg-pick tpl-pick">
-            <button :class="{ active: m3u8.tpl === 'movie' }"
-                    @click="setTpl('movie')">🎬 电影</button>
-            <button :class="{ active: m3u8.tpl === 'tv' }"
-                    @click="setTpl('tv')">📺 电视剧</button>
-            <button :class="{ active: m3u8.tpl === 'anime' }"
-                    @click="setTpl('anime')">🌸 动漫</button>
+        <div class="tpl-cards">
+            <button type="button" class="tpl-card tpl-movie"
+                    :class="{ active: m3u8.tpl === 'movie' }"
+                    @click="setTpl('movie')">
+                <span class="tc-ico">🎬</span>
+                <span class="tc-txt">
+                    <strong>电影</strong>
+                    <small>Movie</small>
+                </span>
+            </button>
+            <button type="button" class="tpl-card tpl-tv"
+                    :class="{ active: m3u8.tpl === 'tv' }"
+                    @click="setTpl('tv')">
+                <span class="tc-ico">📺</span>
+                <span class="tc-txt">
+                    <strong>电视剧</strong>
+                    <small>TV Series</small>
+                </span>
+            </button>
+            <button type="button" class="tpl-card tpl-anime"
+                    :class="{ active: m3u8.tpl === 'anime' }"
+                    @click="setTpl('anime')">
+                <span class="tc-ico">🌸</span>
+                <span class="tc-txt">
+                    <strong>动漫</strong>
+                    <small>Anime</small>
+                </span>
+            </button>
         </div>
     </div>
     <div v-if="m3u8.tpl" class="tpl-fields">
