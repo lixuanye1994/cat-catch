@@ -1,6 +1,7 @@
 """FastAPI 入口：API + WebSocket + 托管前端"""
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -279,10 +280,13 @@ async def bili_playurl(body: BiliPlayurlIn):
 async def bili_download(body: BiliDownloadIn):
     refresh_settings()
     headers = bilibili.download_headers(settings.get("bilibili_sessdata", ""))
+    # B 站视频统一保存到 下载根目录/B站
+    bili_dir = str(Path(settings["output_dir"]) / "B站")
     return await manager.start(
         kind="dash-merge",
         params={"video_url": body.video_url, "audio_url": body.audio_url},
-        headers=headers, title=body.title, settings=settings)
+        headers=headers, title=body.title, settings=settings,
+        options={"output_dir": bili_dir})
 
 
 @app.post("/api/bilibili/download/cancel")
