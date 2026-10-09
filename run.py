@@ -42,6 +42,9 @@ def main():
         print("  ffmpeg : 未找到（m3u8/mpd 下载前请在页面设置中指定 ffmpeg.exe）")
     print(f"  输出到 : {settings['output_dir']}")
     url = f"http://{settings['host']}:{settings['port']}"
+    # 0.0.0.0 仅用于监听所有网卡，浏览器访问本机一律走 127.0.0.1
+    open_url = f"http://127.0.0.1:{settings['port']}" \
+        if settings["host"] == "0.0.0.0" else url
     print(f"  本机访问  : http://127.0.0.1:{settings['port']}")
     if settings["host"] == "0.0.0.0":
         lan_ip = _get_lan_ip()
@@ -51,7 +54,7 @@ def main():
         print(f"  请在浏览器打开: {url}")
     print("=" * 56)
     # 延迟 1.5 秒用系统默认浏览器（外部浏览器）打开，等服务先就绪
-    threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    threading.Timer(1.5, lambda: webbrowser.open(open_url)).start()
     uvicorn.run("backend.main:app",
                 host=settings["host"], port=settings["port"], log_level="warning")
 
