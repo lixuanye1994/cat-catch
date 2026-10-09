@@ -477,7 +477,7 @@ body {
     color: var(--muted); font-style: normal; font-size: 13px;
 }
 
-.param-block { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.param-block { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
 .param-block > span { color: var(--muted); font-size: 13px; min-width: 120px; }
 .seg-pick { display: flex; gap: 6px; }
 .seg-pick button {
@@ -489,6 +489,18 @@ body {
 .seg-pick button.active {
     color: #fff; border-color: var(--primary);
     background: var(--seg-active-bg);
+}
+.seg-pick button.warn {
+    color: var(--danger); border-color: var(--danger);
+    border-style: dashed;
+}
+.seg-pick button.warn.active {
+    color: #fff; background: var(--danger); border-style: solid;
+}
+.warn-hint {
+    display: block; width: 100%;
+    color: var(--danger); font-size: 12px; font-style: normal;
+    margin-top: 6px;
 }
 
 /* 命名模板：卡片式类型选择 */

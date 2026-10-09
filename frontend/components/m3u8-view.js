@@ -342,16 +342,23 @@ Components.M3u8View = {
 
         // 点击模板；再点当前模板则退回自由命名
         setTpl(type) {
-            if (this.m3u8.tpl === type) {
-                this.m3u8.tpl = "";
-                // 取消模板时回到下载根目录（仅自动模式下）
-                if (this.m3u8.dirAuto) this.m3u8.outputDir = this.baseOutputDir();
-                return;
-            }
+            if (this.m3u8.tpl === type) { this.clearTpl(); return; }
             if (!this.m3u8.meta.name.trim()) {
                 this.m3u8.meta.name = this.m3u8.title.trim();
             }
             this.m3u8.tpl = type;
+        },
+
+        // 退回自由命名：只取消模板，保存目录保持原样（仍在原分类文件夹内）；
+        // dirAuto 保持不变，之后重新选模板时仍会按新模板重算目录
+        clearTpl() {
+            this.m3u8.tpl = "";
+        },
+
+        // 手动改文件名即脱离模板，避免之后改 meta 时再被 composeName 覆盖
+        onTitleInput(e) {
+            this.m3u8.title = e.target.value;
+            if (this.m3u8.tpl) this.clearTpl();
         },
 
         async m3u8Start() {

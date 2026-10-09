@@ -135,18 +135,19 @@
     <label class="form-row">
         <span>文件名称</span>
         <div class="name-row">
-            <input v-model="m3u8.title" type="text"
-                   :readonly="!!m3u8.tpl" />
+            <input :value="m3u8.title" type="text"
+                   @input="onTitleInput" />
             <em class="suffix-tag">.mp4</em>
         </div>
     </label>
     <div class="param-block">
         <span>同时下载数量</span>
         <div class="seg-pick">
-            <button v-for="n in [1,2,4,6,8]" :key="n"
-                    :class="{ active: m3u8.concurrency === n }"
+            <button v-for="n in [1,2,4,6,8,12,16]" :key="n"
+                    :class="{ active: m3u8.concurrency === n, warn: n >= 12 }"
                     @click="m3u8.concurrency = n">{{ n }}</button>
         </div>
+        <em v-if="m3u8.concurrency >= 12" class="warn-hint">并发过高可能触发站点限流（429）甚至封 IP，且占用更多内存，请谨慎使用</em>
     </div>
     <div class="param-block">
         <span>每个资源的重试次数</span>
